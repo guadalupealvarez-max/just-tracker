@@ -105,6 +105,13 @@
             text-align: center;
         }
 
+        .success {
+            color: #10b981;
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
         .login-box .info {
             color: #6b7280;
             font-size: 12px;
@@ -323,15 +330,6 @@
             color: #0c2340;
         }
 
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-size: 18px;
-            color: #6b7280;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -389,6 +387,7 @@
                 </div>
 
                 <div id="loginError" class="error hidden"></div>
+                <div id="loginSuccess" class="success hidden"></div>
 
                 <button type="submit">Iniciar Sesión</button>
             </form>
@@ -480,24 +479,44 @@
         const SUPABASE_URL = 'https://xarhdnejvjtqklelszeu.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhcmhkbmVqdmp0cWtsZWxzemV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTk2MTMsImV4cCI6MjEwMzc3NTYxM30.pJDsww_Mq2h59LcxQRuXdmPw641ImSy3dBiHXnj5M_c';
 
-        const { createClient } = window.supabase;
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
+        let sbClient = null;
         let allTareas = [];
         let currentUser = null;
+
+        try {
+            sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('Supabase client initialized successfully');
+        } catch (err) {
+            console.error('Error initializing Supabase:', err);
+        }
 
         // LOGIN
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            const successDiv = document.getElementById('loginSuccess');
+
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await sbClient.auth.signInWithPassword({ 
+                    email, 
+                    password 
+                });
 
                 if (error) {
-                    document.getElementById('loginError').textContent = error.message;
-                    document.getElementById('loginError').classList.remove('hidden');
+                    console.error('Login error:', error);
+                    errorDiv.textContent = error.message || 'Error al iniciar sesión';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (!data.user) {
+                    errorDiv.textContent = 'Usuario no encontrado';
+                    errorDiv.classList.remove('hidden');
                     return;
                 }
 
@@ -507,31 +526,43 @@
                 document.getElementById('dashboardScreen').classList.remove('hidden');
                 loadTareas();
             } catch (err) {
-                document.getElementById('loginError').textContent = 'Error al iniciar sesión';
-                document.getElementById('loginError').classList.remove('hidden');
+                console.error('Unexpected error:', err);
+                errorDiv.textContent = 'Error al iniciar sesión: ' + err.message;
+                errorDiv.classList.remove('hidden');
             }
         });
 
         // LOGOUT
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            await supabase.auth.signOut();
+            try {
+                await sbClient.auth.signOut();
+            } catch (err) {
+                console.error('Logout error:', err);
+            }
+            
             document.getElementById('dashboardScreen').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('loginForm').reset();
             document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('loginSuccess').classList.add('hidden');
         });
 
         // LOAD TAREAS
         async function loadTareas() {
             try {
-                const { data, error } = await supabase.from('tareas').select('*').order('nombre');
-                if (error) throw error;
+                const { data, error } = await sbClient.from('tareas').select('*').order('nombre');
+                
+                if (error) {
+                    console.error('Error loading tareas:', error);
+                    return;
+                }
+                
                 allTareas = data || [];
                 renderTareas();
                 updateMetrics();
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleString('es-AR');
             } catch (err) {
-                console.error('Error loading tareas:', err);
+                console.error('Unexpected error loading tareas:', err);
             }
         }
 
