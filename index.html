@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JUST TRACKER - Digital Communications Status</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+
+        /* LOGIN */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #667eea;
+        }
+
+        .login-box .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        button:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #dc2626;
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .login-box .info {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        /* DASHBOARD */
+        .dashboard {
+            min-height: 100vh;
+            background: #f9fafb;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .dashboard-header h1 {
+            font-size: 28px;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            color: #6b7280;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-email {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        .filters {
+            background: white;
+            padding: 16px 24px;
+            margin: 24px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .metric-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .table-container {
+            margin: 24px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: #f3f4f6;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        tr.main-task {
+            font-weight: 600;
+            background: #f3f4f6;
+        }
+
+        tr.sub-task {
+            background: #fafbfc;
+        }
+
+        tr.sub-task .task-name {
+            padding-left: 32px;
+            font-weight: 400;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tipo-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .priority {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .priority.altísima {
+            background: #fca5a5;
+            color: #7f1d1d;
+        }
+
+        .priority.alta {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .priority.media {
+            background: #fce7f3;
+            color: #831843;
+        }
+
+        .priority.baja {
+            background: #dbeafe;
+            color: #0c2340;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-size: 18px;
+            color: #6b7280;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .footer-info {
+            padding: 16px 24px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            margin-bottom: 24px;
+        }
+
+        .footer-info p {
+            margin: 4px 0;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .filters {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h1>📊 JUST TRACKER</h1>
+            <p class="subtitle">Digital Communications Status</p>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" required placeholder="guadalupe.alvarez@swissjust.net">
+                </div>
+
+                <div class="form-group">
+                    <label>Contraseña:</label>
+                    <input type="password" id="password" required placeholder="JustTracker2026!">
+                </div>
+
+                <div id="loginError" class="error hidden"></div>
+
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+
+            <p class="info">Email: guadalupe.alvarez@swissjust.net</p>
+            <p class="info">Contraseña: JustTracker2026!</p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboardScreen" class="dashboard hidden">
+        <header class="dashboard-header">
+            <div>
+                <h1>📊 JUST TRACKER</h1>
+                <p>Estado de Tareas - Digital Communications</p>
+            </div>
+            <div class="header-actions">
+                <span class="user-email" id="userEmail"></span>
+                <button class="logout-btn" id="logoutBtn">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>Tipo:</label>
+                <select id="filterTipo">
+                    <option value="TODOS">TODOS</option>
+                    <option value="PAID">PAID MEDIA</option>
+                    <option value="RRSS">RRSS</option>
+                    <option value="EMAIL_MKT">EMAIL MKT</option>
+                    <option value="MULTI">MULTI</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Estado:</label>
+                <select id="filterEstado">
+                    <option value="TODOS">TODOS</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Ejecución">En Ejecución</option>
+                    <option value="On Going">On Going</option>
+                    <option value="Completado">Completado</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <span class="metric-label">Total Tareas</span>
+                <span class="metric-value" id="totalTareas">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">En Ejecución</span>
+                <span class="metric-value" style="color: #10b981;" id="enEjecucion">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Pendientes</span>
+                <span class="metric-value" style="color: #ef4444;" id="pendientes">0</span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="tasksTable">
+                <thead>
+                    <tr>
+                        <th>Tarea</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>País</th>
+                        <th>Tipo</th>
+                        <th>Proveedor</th>
+                        <th>Fecha Entrega</th>
+                        <th>Comentarios</th>
+                    </tr>
+                </thead>
+                <tbody id="tasksList">
+                    <tr><td colspan="8" style="text-align: center; padding: 20px;">Cargando tareas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-info">
+            <p>💡 Última actualización: <span id="lastUpdate"></span></p>
+            <p>Para actualizar, contactá a Guadalupe con tu "parte diario"</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://xarhdnejvjtqklelszeu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhcmhkbmVqdmp0cWtsZWxzemV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTk2MTMsImV4cCI6MjEwMzc3NTYxM30.pJDsww_Mq2h59LcxQRuXdmPw641ImSy3dBiHXnj5M_c';
+
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allTareas = [];
+        let currentUser = null;
+
+        // LOGIN
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    document.getElementById('loginError').textContent = error.message;
+                    document.getElementById('loginError').classList.remove('hidden');
+                    return;
+                }
+
+                currentUser = data.user;
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                loadTareas();
+            } catch (err) {
+                document.getElementById('loginError').textContent = 'Error al iniciar sesión';
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        });
+
+        // LOGOUT
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').classList.add('hidden');
+        });
+
+        // LOAD TAREAS
+        async function loadTareas() {
+            try {
+                const { data, error } = await supabase.from('tareas').select('*').order('nombre');
+                if (error) throw error;
+                allTareas = data || [];
+                renderTareas();
+                updateMetrics();
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('es-AR');
+            } catch (err) {
+                console.error('Error loading tareas:', err);
+            }
+        }
+
+        // RENDER TAREAS
+        function renderTareas() {
+            const filterTipo = document.getElementById('filterTipo').value;
+            const filterEstado = document.getElementById('filterEstado').value;
+
+            const filtered = allTareas.filter((t) => {
+                const tipoMatch = filterTipo === 'TODOS' || t.tipo === filterTipo;
+                const estadoMatch = filterEstado === 'TODOS' || t.estado === filterEstado;
+                return tipoMatch && estadoMatch;
+            });
+
+            const tareasPrincipales = filtered.filter((t) => !t.subtarea_de);
+            const tbody = document.getElementById('tasksList');
+
+            if (tareasPrincipales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No hay tareas en este filtro</td></tr>';
+                return;
+            }
+
+            let html = '';
+            tareasPrincipales.forEach((tarea) => {
+                html += `
+                    <tr class="main-task">
+                        <td class="task-name"><strong>${tarea.nombre}</strong></td>
+                        <td><span class="badge" style="background-color: ${getEstadoColor(tarea.estado)}">${tarea.estado}</span></td>
+                        <td><span class="priority ${tarea.prioridad.toLowerCase()}">${tarea.prioridad}</span></td>
+                        <td>${tarea.pais}</td>
+                        <td><span class="tipo-badge" style="background-color: ${getTipoColor(tarea.tipo)}">${tarea.tipo}</span></td>
+                        <td>${tarea.proveedor}</td>
+                        <td>${tarea.fecha_entrega}</td>
+                        <td>${tarea.comentarios || ''}</td>
+                    </tr>
+                `;
+
+                const subTareas = allTareas.filter((st) => st.subtarea_de === tarea.id);
+                subTareas.forEach((sub) => {
+                    html += `
+                        <tr class="sub-task">
+                            <td class="task-name"><span style="color: #6b7280;">└─ ${sub.nombre}</span></td>
+                            <td><span class="badge" style="background-color: ${getEstadoColor(sub.estado)}">${sub.estado}</span></td>
+                            <td><span class="priority ${sub.prioridad.toLowerCase()}">${sub.prioridad}</span></td>
+                            <td>${sub.pais}</td>
+                            <td><span class="tipo-badge" style="background-color: ${getTipoColor(sub.tipo)}">${sub.tipo}</span></td>
+                            <td>${sub.proveedor}</td>
+                            <td>${sub.fecha_entrega}</td>
+                            <td>${sub.comentarios || ''}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function getEstadoColor(estado) {
+            const colors = {
+                'En Ejecución': '#10b981',
+                'On Going': '#10b981',
+                'Pendiente': '#ef4444',
+                'Completado': '#6b7280',
+            };
+            return colors[estado] || '#6b7280';
+        }
+
+        function getTipoColor(tipo) {
+            const colors = {
+                'PAID': '#3b82f6',
+                'RRSS': '#8b5cf6',
+                'EMAIL_MKT': '#ec4899',
+                'MULTI': '#f59e0b',
+            };
+            return colors[tipo] || '#6b7280';
+        }
+
+        function updateMetrics() {
+            const filterTipo = document.getElementById('filterTipo').value;
+            const filterEstado = document.getElementById('filterEstado').value;
+
+            const filtered = allTareas.filter((t) => {
+                const tipoMatch = filterTipo === 'TODOS' || t.tipo === filterTipo;
+                const estadoMatch = filterEstado === 'TODOS' || t.estado === filterEstado;
+                return tipoMatch && estadoMatch;
+            });
+
+            document.getElementById('totalTareas').textContent = filtered.length;
+            document.getElementById('enEjecucion').textContent = filtered.filter((t) => t.estado === 'En Ejecución' || t.estado === 'On Going').length;
+            document.getElementById('pendientes').textContent = filtered.filter((t) => t.estado === 'Pendiente').length;
+        }
+
+        // FILTERS
+        document.getElementById('filterTipo').addEventListener('change', () => {
+            renderTareas();
+            updateMetrics();
+        });
+
+        document.getElementById('filterEstado').addEventListener('change', () => {
+            renderTareas();
+            updateMetrics();
+        });
+    </script>
+</body>
+</html>
